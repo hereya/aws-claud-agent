@@ -15,10 +15,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Synthesize template
-STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest npx cdk synth
+STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest anthropicApiKey=sk-ant-... npx cdk synth
 
 # Deploy with custom settings
-STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest memorySize=2048 timeout=600 npx cdk deploy
+STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest anthropicApiKey=sk-ant-... memorySize=2048 timeout=600 npx cdk deploy
 ```
 
 ## Architecture
@@ -26,13 +26,16 @@ STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:
 This is a Hereya CDK package (`hereya/claude-agent`) that provisions AWS infrastructure for a Claude Agent worker pattern.
 
 **Resources created:**
+
 - Input S3 bucket - for file uploads
 - Input SQS queue - triggers Lambda (visibility timeout = 6x Lambda timeout)
 - Lambda function - from ECR Docker image
 - Output S3 bucket - for results
 - Output SQS queue - for status messages
+- Secrets Manager secret - stores Anthropic API key securely
 
 **Flow:**
+
 1. Producer uploads file to Input S3
 2. Producer sends job message to Input SQS
 3. Lambda reads file, processes with Claude Agent SDK
@@ -42,26 +45,29 @@ This is a Hereya CDK package (`hereya/claude-agent`) that provisions AWS infrast
 
 ## Environment Variables (Inputs)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `STACK_NAME` | Yes | - | Stack name (provided by Hereya) |
-| `imageUri` | Yes | - | ECR Docker image URL |
-| `namePrefix` | No | `agent` | Prefix for resource names |
-| `memorySize` | No | `1024` | Lambda memory in MB |
-| `timeout` | No | `900` | Lambda timeout in seconds |
-| `autoDeleteObjects` | No | `false` | Auto-delete S3 objects on stack destruction |
+| Variable               | Required | Default | Description                                 |
+| ---------------------- | -------- | ------- | ------------------------------------------- |
+| `STACK_NAME`           | Yes      | -       | Stack name (provided by Hereya)             |
+| `imageUri`             | Yes      | -       | ECR Docker image URL                        |
+| `anthropicApiKey`      | Yes      | -       | Anthropic API key for Claude                |
+| `namePrefix`           | No       | `agent` | Prefix for resource names                   |
+| `memorySize`           | No       | `1024`  | Lambda memory in MB                         |
+| `timeout`              | No       | `900`   | Lambda timeout in seconds                   |
+| `ephemeralStorageSize` | No       | `5120`  | Lambda ephemeral storage in MB (5 GiB)      |
+| `autoDeleteObjects`    | No       | `false` | Auto-delete S3 objects on stack destruction |
 
 ## CfnOutputs (Exports)
 
-| Output | Description |
-|--------|-------------|
-| `inputBucketName` | Name of the input S3 bucket |
-| `inputQueueUrl` | URL of the input SQS queue |
-| `outputBucketName` | Name of the output S3 bucket |
-| `outputQueueUrl` | URL of the output SQS queue |
-| `lambdaFunctionName` | Name of the Lambda function |
-| `awsRegion` | AWS region |
-| `iamPolicyClaudeAgentClient` | Combined IAM policy JSON for consumers |
+| Output                       | Description                               |
+| ---------------------------- | ----------------------------------------- |
+| `inputBucketName`            | Name of the input S3 bucket               |
+| `inputQueueUrl`              | URL of the input SQS queue                |
+| `outputBucketName`           | Name of the output S3 bucket              |
+| `outputQueueUrl`             | URL of the output SQS queue               |
+| `lambdaFunctionName`         | Name of the Lambda function               |
+| `awsRegion`                  | AWS region                                |
+| `iamPolicyClaudeAgentClient` | Combined IAM policy JSON for consumers    |
+| `anthropicApiKeySecretArn`   | Secrets Manager ARN for Anthropic API key |
 
 ## Project Structure
 

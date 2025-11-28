@@ -8,17 +8,21 @@ describe('HereyaClaudeAgentStack', () => {
   beforeEach(() => {
     // Set required env vars
     process.env.imageUri = TEST_IMAGE_URI;
+    process.env.anthropicApiKey = 'sk-ant-test-key';
     delete process.env.namePrefix;
     delete process.env.memorySize;
     delete process.env.timeout;
+    delete process.env.ephemeralStorageSize;
     delete process.env.autoDeleteObjects;
   });
 
   afterEach(() => {
     delete process.env.imageUri;
+    delete process.env.anthropicApiKey;
     delete process.env.namePrefix;
     delete process.env.memorySize;
     delete process.env.timeout;
+    delete process.env.ephemeralStorageSize;
     delete process.env.autoDeleteObjects;
   });
 
@@ -112,6 +116,32 @@ describe('HereyaClaudeAgentStack', () => {
     });
   });
 
+  test('Lambda uses default ephemeral storage of 5120 MB', () => {
+    const app = new cdk.App();
+    const stack = new HereyaClaudeAgent.HereyaClaudeAgentStack(app, 'TestStack');
+    const template = Template.fromStack(stack);
+
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      EphemeralStorage: {
+        Size: 5120
+      }
+    });
+  });
+
+  test('Lambda uses custom ephemeral storage when set', () => {
+    process.env.ephemeralStorageSize = '10240';
+
+    const app = new cdk.App();
+    const stack = new HereyaClaudeAgent.HereyaClaudeAgentStack(app, 'TestStack');
+    const template = Template.fromStack(stack);
+
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      EphemeralStorage: {
+        Size: 10240
+      }
+    });
+  });
+
   test('Lambda has environment variables for bucket and queue', () => {
     const app = new cdk.App();
     const stack = new HereyaClaudeAgent.HereyaClaudeAgentStack(app, 'TestStack');
@@ -126,6 +156,18 @@ describe('HereyaClaudeAgentStack', () => {
     expect(lambdaResource.Properties.Environment.Variables).toHaveProperty('INPUT_BUCKET');
     expect(lambdaResource.Properties.Environment.Variables).toHaveProperty('OUTPUT_BUCKET');
     expect(lambdaResource.Properties.Environment.Variables).toHaveProperty('OUTPUT_SQS_QUEUE_URL');
+    expect(lambdaResource.Properties.Environment.Variables).toHaveProperty('ANTHROPIC_API_KEY_SECRET_ARN');
+  });
+
+  test('Creates Secrets Manager secret for Anthropic API key', () => {
+    const app = new cdk.App();
+    const stack = new HereyaClaudeAgent.HereyaClaudeAgentStack(app, 'TestStack');
+    const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::SecretsManager::Secret', 1);
+    template.hasResourceProperties('AWS::SecretsManager::Secret', {
+      Name: 'agent-TestStack/anthropic-api-key'
+    });
   });
 
   test('Creates SQS event source mapping for Lambda', () => {
@@ -156,6 +198,7 @@ describe('HereyaClaudeAgentStack', () => {
     expect(json.Outputs).toHaveProperty('lambdaFunctionName');
     expect(json.Outputs).toHaveProperty('awsRegion');
     expect(json.Outputs).toHaveProperty('iamPolicyClaudeAgentClient');
+    expect(json.Outputs).toHaveProperty('anthropicApiKeySecretArn');
   });
 
   test('Consumer IAM policy contains correct actions', () => {
@@ -215,6 +258,15 @@ describe('HereyaClaudeAgentStack', () => {
     expect(() => {
       new HereyaClaudeAgent.HereyaClaudeAgentStack(app, 'TestStack');
     }).toThrow('imageUri environment variable is required');
+  });
+
+  test('Throws error when anthropicApiKey is not set', () => {
+    delete process.env.anthropicApiKey;
+
+    const app = new cdk.App();
+    expect(() => {
+      new HereyaClaudeAgent.HereyaClaudeAgentStack(app, 'TestStack');
+    }).toThrow('anthropicApiKey environment variable is required');
   });
 
   test('Respects autoDeleteObjects parameter', () => {

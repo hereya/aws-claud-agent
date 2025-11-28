@@ -1,9 +1,10 @@
-import { Stack, StackProps, RemovalPolicy, Duration, CfnOutput } from 'aws-cdk-lib';
+import { Stack, StackProps, RemovalPolicy, Duration, CfnOutput, Size, SecretValue } from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 
@@ -19,14 +20,27 @@ export class HereyaClaudeAgentStack extends Stack {
     if (!imageUri) {
       throw new Error('imageUri environment variable is required');
     }
+    const anthropicApiKey = process.env.anthropicApiKey;
+    if (!anthropicApiKey) {
+      throw new Error('anthropicApiKey environment variable is required');
+    }
     const memorySize = parseInt(process.env.memorySize || '1024', 10);
     const timeout = parseInt(process.env.timeout || '900', 10);
+    const ephemeralStorageSize = parseInt(process.env.ephemeralStorageSize || '5120', 10);
     const autoDeleteObjects = process.env.autoDeleteObjects === 'true';
 
     // Parse ECR image URI: {account}.dkr.ecr.{region}.amazonaws.com/{repo}:{tag}
     const uriParts = imageUri.split('/');
     const repoAndTag = uriParts.slice(1).join('/');
     const [repoName, imageTag = 'latest'] = repoAndTag.split(':');
+
+    // ============================================
+    // SECRETS MANAGER
+    // ============================================
+    const anthropicApiKeySecret = new secretsmanager.Secret(this, 'AnthropicApiKey', {
+      secretName: `${prefix}-${this.stackName}/anthropic-api-key`,
+      secretStringValue: SecretValue.unsafePlainText(anthropicApiKey),
+    });
 
     // ============================================
     // S3 BUCKETS
@@ -78,17 +92,20 @@ export class HereyaClaudeAgentStack extends Stack {
       }),
       memorySize,
       timeout: Duration.seconds(timeout),
+      ephemeralStorageSize: Size.mebibytes(ephemeralStorageSize),
       environment: {
         INPUT_BUCKET: inputBucket.bucketName,
         OUTPUT_BUCKET: outputBucket.bucketName,
         OUTPUT_SQS_QUEUE_URL: outputQueue.queueUrl,
-      }
+        ANTHROPIC_API_KEY_SECRET_ARN: anthropicApiKeySecret.secretArn,
+      },
     });
 
     // Grant Lambda permissions
     inputBucket.grantRead(fn);
     outputBucket.grantWrite(fn);
     outputQueue.grantSendMessages(fn);
+    anthropicApiKeySecret.grantRead(fn);
 
     // Add SQS trigger
     fn.addEventSource(new SqsEventSource(inputQueue, {
@@ -172,6 +189,11 @@ export class HereyaClaudeAgentStack extends Stack {
     new CfnOutput(this, 'iamPolicyClaudeAgentClient', {
       value: JSON.stringify(consumerPolicy.toJSON()),
       description: 'IAM policy document for consumer applications'
+    });
+
+    new CfnOutput(this, 'anthropicApiKeySecretArn', {
+      value: anthropicApiKeySecret.secretArn,
+      description: 'Secrets Manager ARN for Anthropic API key'
     });
   }
 }
