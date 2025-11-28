@@ -1,0 +1,6 @@
+name: hereya/claude-agent
+version: 0.1.0
+description: "Provisions AWS infrastructure for Claude Agent worker pattern with S3, SQS, and Lambda"
+visibility: public
+iac: cdk
+infra: aws
