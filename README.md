@@ -52,7 +52,7 @@ A Hereya CDK package that provisions AWS infrastructure for a Claude Agent worke
 
 ```bash
 # Deploy with Hereya
-hereya add hereya/claude-agent -p "imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest anthropicApiKey=sk-ant-..."
+hereya add hereya/aws-claude-agent -p "imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest anthropicApiKey=sk-ant-..."
 
 # Or deploy directly with CDK
 STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:latest anthropicApiKey=sk-ant-... npx cdk deploy

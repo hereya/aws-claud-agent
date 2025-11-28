@@ -23,7 +23,7 @@ STACK_NAME=my-agent imageUri=123456789.dkr.ecr.us-east-1.amazonaws.com/my-agent:
 
 ## Architecture
 
-This is a Hereya CDK package (`hereya/claude-agent`) that provisions AWS infrastructure for a Claude Agent worker pattern.
+This is a Hereya CDK package (`hereya/aws-claude-agent`) that provisions AWS infrastructure for a Claude Agent worker pattern.
 
 **Resources created:**
 
