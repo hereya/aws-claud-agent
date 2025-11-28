@@ -1,4 +1,4 @@
-# hereya/claude-agent
+# hereya/aws-claude-agent
 
 A Hereya CDK package that provisions AWS infrastructure for a Claude Agent worker pattern.
 
