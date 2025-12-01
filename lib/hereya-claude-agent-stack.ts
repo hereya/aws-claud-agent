@@ -107,6 +107,17 @@ export class HereyaClaudeAgentStack extends Stack {
     outputQueue.grantSendMessages(fn);
     anthropicApiKeySecret.grantRead(fn);
 
+    // Grant SSM Parameter Store read access
+    fn.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters',
+        'ssm:GetParametersByPath',
+      ],
+      resources: ['*'],
+    }));
+
     // Add SQS trigger
     fn.addEventSource(new SqsEventSource(inputQueue, {
       batchSize: 1,
