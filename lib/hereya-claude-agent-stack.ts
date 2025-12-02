@@ -134,6 +134,12 @@ export class HereyaClaudeAgentStack extends Stack {
           actions: ['s3:PutObject'],
           resources: [`${inputBucket.bucketArn}/*`]
         }),
+        // Read from Input S3 (download uploaded files)
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:GetObject'],
+          resources: [`${inputBucket.bucketArn}/*`]
+        }),
         // Send to Input SQS (trigger processing)
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
