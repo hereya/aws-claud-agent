@@ -68,6 +68,7 @@ This is a Hereya CDK package (`hereya/aws-claude-agent`) that provisions AWS inf
 | `awsRegion`                  | AWS region                                |
 | `iamPolicyClaudeAgentClient` | Combined IAM policy JSON for consumers    |
 | `anthropicApiKeySecretArn`   | Secrets Manager ARN for Anthropic API key |
+| `anthropicApiKey`            | Secrets Manager ARN for Anthropic API key (alias of `anthropicApiKeySecretArn`) |
 
 ## Project Structure
 

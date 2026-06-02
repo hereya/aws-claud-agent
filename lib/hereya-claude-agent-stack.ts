@@ -212,5 +212,10 @@ export class HereyaClaudeAgentStack extends Stack {
       value: anthropicApiKeySecret.secretArn,
       description: 'Secrets Manager ARN for Anthropic API key'
     });
+
+    new CfnOutput(this, 'anthropicApiKey', {
+      value: anthropicApiKeySecret.secretArn,
+      description: 'Secrets Manager ARN for Anthropic API key'
+    });
   }
 }
